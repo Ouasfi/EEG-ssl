@@ -1,9 +1,8 @@
 
 
-import numpy as np # linear algebra
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+import numpy as numpy
+import pandas as pd 
 import os
-
 import matplotlib.pyplot as plt
 import mne
 from mne import read_proj
@@ -74,11 +73,18 @@ def process(subject):
 
 
 def get_events(raw):
-    
+    """ a function to get events from raw eeg data
+    parameters:
+    ----------
+    raw = mne RAW object
+    """
     return  mne.find_events(raw, stim_channel='STI 014')
 
 
 def get_stimuli_version(subject):
+    """
+
+    """
     version = 1 if  subject in ['Pilot3','P01','P04','P05','P06','P07'] else 2
     return version
     
@@ -97,6 +103,13 @@ def get_audio_filepath(stim_id, data_root=None, version=None):
                         meta[stim_id]['audio_file'])
 
 def load_stimuli_metadata(data_root=None, version=None, verbose=None):
+
+    """
+
+    returns:
+    -------
+    - a dict of  stimuli metadata
+    """
 
     if version is None:
         version = DEFAULT_VERSION
@@ -137,15 +150,6 @@ def load_stimuli_metadata(data_root=None, version=None, verbose=None):
     return meta
 
 
-def target_to_path(target_id, subject, mapping_dict):
-    
-    version = 1 if  subject in ['Pilot3','P01','P04','P05','P06','P07'] else 2
-    mapping = load_stimuli_metadata(data_root=METADATA_DIR, version=version, verbose=None) 
-        
-
-    return os.path.join(METADATA_DIR, 'audio', 'full.v{}'.format(version),
-                        mapping[target_id]['audio_file'].decode("utf-8") )
-
 def data_from_raw(raw):
     return raw[:-1][0]
 
@@ -154,7 +158,9 @@ def get_perception_data(eeg_data, events ):
     """
     a function to get perception features and target ids from eeg 
     data recording of a single subject using an events array
-    
+    returns:
+    -------
+    a dict with a list of `features` and a list of target ids as values.
     """
     
     start = 0
@@ -174,3 +180,12 @@ def get_perception_data(eeg_data, events ):
                 
         start = end 
     return {"features": features, "targets": target_ids}
+
+def target_to_path(target_id, subject, mapping_dict):
+    
+    version = 1 if  subject in ['Pilot3','P01','P04','P05','P06','P07'] else 2
+    mapping = load_stimuli_metadata(data_root=METADATA_DIR, version=version, verbose=None) 
+        
+
+    return os.path.join(METADATA_DIR, 'audio', 'full.v{}'.format(version),
+                        mapping[target_id]['audio_file'].decode("utf-8") )

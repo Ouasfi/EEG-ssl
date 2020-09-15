@@ -43,7 +43,7 @@ class Abstract_Dataset(torch.utils.data.Dataset):
     '''
     Classe dataset  pour les differents sampling
     '''
-    def __init__(self, time_series, temp_len = T, n_features = C):
+    def __init__(self, time_series, temp_len , n_features):
 
         self.time_series = time_series
         self.temp_len = temp_len

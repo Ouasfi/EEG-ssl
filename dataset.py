@@ -1,5 +1,6 @@
 from pylab import *
 import torch 
+from torch.nn import *
 
 class WeightedSampler(torch.utils.data.sampler.Sampler):
     r"""Sample des windows randomly

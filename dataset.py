@@ -28,8 +28,8 @@ class WeightedSampler(torch.utils.data.sampler.Sampler):
             while sampled < self.batch_size:
                 target  = 2*torch.multinomial(
             self.weights, 1, replacement=True) -1
-                t = choice(arange(0, self.serie_len-dataset.temp_len, 1))
-                t_ = dataset.get_pos(t) if target>0 else dataset.get_neg(t)
+                t = choice(arange(0, self.serie_len-self.dataset.temp_len, 1))
+                t_ = self.dataset.get_pos(t) if target>0 else self.dataset.get_neg(t)
                 sampled += 1
                 yield (t, t_, target)
             

@@ -16,8 +16,6 @@ from  settings import *
 
 
 
-
-
 def get_raw(subject):
     """
     a function to get the raw data corresponding to a subject ID

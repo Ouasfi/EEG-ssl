@@ -39,7 +39,7 @@ def get_ica(subject):
     -------
     """
 
-    path_ica = os.path.join(ICA_DIR, f'{subject}-100p_64c-ica.fif')
+    path_ica = os.path.join(ICA_DIR, f'P{subject}-100p_64c-ica.fif')
     return read_ica(path_ica)
 def reconstuct_signal(raw, ica):
     """

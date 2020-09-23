@@ -7,7 +7,6 @@ from torch import nn
 from torch.nn.functional import soft_margin_loss
 
 
-
 class StagerNet(Module):
     """
      StagerNet implementation.    
@@ -42,7 +41,7 @@ class StagerNet(Module):
       return x
 
 
-      class ShallowNet(Module):
+class ShallowNet(Module):
     """
      ShallowNet implementation.    
     """
@@ -74,3 +73,54 @@ class StagerNet(Module):
       x = self.dropout(self.flatten(x))
       x = self.linear_class(x)
       return x
+    """
+     ShallowNet implementation.    
+    """
+    def __init__(self, num_classes, num_channels , temp_lenght):
+        super().__init__()      
+        # create conversion layer
+        self.eps = 1e-45
+        self.relu = ReLU()
+        
+        self.temp_conv1 =  Conv2d(1, 40, (1,25), stride= (1,1))
+        self.batch_norm2 = BatchNorm2d(40)
+        self.spatial_conv = Conv2d(40, 40, (num_channels,1), stride= (1,1))
+        self.meanPool = AvgPool2d((1, 75), stride=(1, 15))
+        self.flatten = Flatten()
+        self.dropout = Dropout(p = 0.5)
+        self.num_features = (((temp_lenght-25+1)-75)//15+1)*40
+        self.linear_class = Linear( self.num_features,num_classes )  
+
+    def forward(self, inputs):
+      x = self.temp_conv1(inputs)
+      x = self.batch_norm2(x)
+      x = self.spatial_conv(x)
+      x = torch.pow(x, 2) # squaring non-linearity
+
+      x = self.meanPool(x)
+      x = self.flatten(x)
+      x = torch.log(x+self.eps) #log  non-linearity 
+      
+      x = self.dropout(self.flatten(x))
+      x = self.linear_class(x)
+      return x
+
+class Relative_Positioning(nn.Module):
+  def __init__(self, EEG_FeatureExtractor, C, T, embedding_dim=100):
+    super().__init__()
+    self.feature_extractor = EEG_FeatureExtractor(num_classes =embedding_dim , num_channels = C , temp_lenght = T).to(float).to(device)
+    #self.feature_extractor.float()
+    self.linear = nn.Linear(embedding_dim, 1)
+    self.loss_fn = nn.SoftMarginLoss()
+
+  def forward(self, x):
+    first_samples = x[0].unsqueeze(dim=1)
+    second_samples = x[1].unsqueeze(dim=1)
+
+    h_first = self.feature_extractor(first_samples)
+    h_second = self.feature_extractor(second_samples)
+
+    h_combined = torch.abs(h_first - h_second)
+
+    out = self.linear(h_combined)
+    return out

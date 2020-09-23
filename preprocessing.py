@@ -38,8 +38,9 @@ def get_ica(subject):
     returns: mne ICA object 
     -------
     """
-
+    
     path_ica = os.path.join(ICA_DIR, f'P{subject}-100p_64c-ica.fif')
+    
     return read_ica(path_ica)
 def reconstuct_signal(raw, ica):
     """
@@ -55,9 +56,7 @@ def reconstuct_signal(raw, ica):
     """
     signal = ica.apply(raw)
     return signal.get_data()
-    
-    
-    
+       
 def process(subject):
     """
     a function to get preprocessed eeg signal for a single subject
@@ -69,7 +68,6 @@ def process(subject):
     
     return reconstuct_signal(raw, ica)
 
-
 def get_events(raw):
     """ a function to get events from raw eeg data
     parameters:
@@ -78,14 +76,12 @@ def get_events(raw):
     """
     return  mne.find_events(raw, stim_channel='STI 014')
 
-
 def get_stimuli_version(subject):
     """
 
     """
     version = 1 if  subject in ['Pilot3','P01','P04','P05','P06','P07'] else 2
-    return version
-    
+    return version    
 
 def get_audio_filepath(stim_id, data_root=None, version=None):
 
@@ -147,7 +143,6 @@ def load_stimuli_metadata(data_root=None, version=None, verbose=None):
 
     return meta
 
-
 def data_from_raw(raw):
     return raw[:-1][0]
 
@@ -187,3 +182,4 @@ def target_to_path(target_id, subject, mapping_dict):
 
     return os.path.join(METADATA_DIR, 'audio', 'full.v{}'.format(version),
                         mapping[target_id]['audio_file'].decode("utf-8") )
+

@@ -1,6 +1,5 @@
 from pylab import *
 import torch 
-from torch.nn import *
 
 class WeightedSampler(torch.utils.data.sampler.Sampler):
     r"""Sample des windows randomly
@@ -23,7 +22,7 @@ class WeightedSampler(torch.utils.data.sampler.Sampler):
     def __iter__(self):
         num_batches = self.size// self.batch_size
         while num_batches > 0:
-            print()
+            #print()
             sampled = 0
             while sampled < self.batch_size:
                 target  = 2*torch.multinomial(
@@ -76,7 +75,7 @@ class Abstract_Dataset(torch.utils.data.Dataset):
 
 class RP_Dataset(Abstract_Dataset):
     
-    def __init__(self, time_series, sampling_params, temp_len = T, n_features = C):
+    def __init__(self, time_series, sampling_params, temp_len , n_features ):
       super().__init__(time_series, temp_len = temp_len, n_features = n_features)
       self.pos , self.neg = sampling_params
     def get_windows(self,index):
@@ -98,14 +97,19 @@ class RP_Dataset(Abstract_Dataset):
       return t_
     def get_neg(self, t_anchor):
       
-      left_idx = arange(0, min(0, t_anchor - self.neg), 1)
+      left_idx = arange(0, max(0, t_anchor - self.neg), 1)
       right_idx =arange(min(self.__len__()-self.temp_len, t_anchor + self.neg),self.__len__()-self.temp_len ,1)
       t_ = choice(hstack([left_idx, right_idx]))
       return t_
 
 def collate(batch):
-    anchors = torch.stack([item[0][0] for item in batch])
-    sampled = torch.stack([item[0][1] for item in batch])
+
+    anchors = torch.stack([torch.from_numpy(item[0][0]) for item in batch])
+    try:
+        sampled = torch.stack([torch.from_numpy(item[0][1]) for item in batch])
+    except:
+        print(batch)
     targets = torch.stack([item[1] for item in batch])
     
     return (anchors, sampled), targets
+

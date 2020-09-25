@@ -5,7 +5,7 @@ from torch import optim
 from torch.utils import data
 from torch import nn
 from torch.nn.functional import soft_margin_loss
-
+from settings import DEVICE
 
 class StagerNet(Module):
     """
@@ -108,7 +108,7 @@ class ShallowNet(Module):
 class Relative_Positioning(nn.Module):
   def __init__(self, EEG_FeatureExtractor, C, T, embedding_dim=100):
     super().__init__()
-    self.feature_extractor = EEG_FeatureExtractor(num_classes =embedding_dim , num_channels = C , temp_lenght = T).to(float).to(device)
+    self.feature_extractor = EEG_FeatureExtractor(num_classes =embedding_dim , num_channels = C , temp_lenght = T).to(float).to(DEVICE)
     #self.feature_extractor.float()
     self.linear = nn.Linear(embedding_dim, 1)
     self.loss_fn = nn.SoftMarginLoss()

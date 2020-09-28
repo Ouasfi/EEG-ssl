@@ -55,7 +55,8 @@ def reconstuct_signal(raw, ica):
     -------
     """
     signal = ica.apply(raw)
-    return signal.get_data()
+    picks = mne.pick_types(signal.info, meg=False, eeg=True, eog=False, stim=False, exclude=[])
+    return signal.get_data(picks)
        
 def process(subject):
     """
@@ -74,7 +75,7 @@ def get_events(raw):
     ----------
     raw = mne RAW object
     """
-    return  mne.find_events(raw, stim_channel='STI 014')
+    return  mne.find_events(raw, stim_channel='STI 014', output = 'offset')
 
 def get_stimuli_version(subject):
     """
@@ -144,7 +145,8 @@ def load_stimuli_metadata(data_root=None, version=None, verbose=None):
     return meta
 
 def data_from_raw(raw):
-    return raw[:-1][0]
+    picks = mne.pick_types(raw.info, meg=False, eeg=True, eog=False, stim=False, exclude=[])
+    return raw.get_data(picks)
 
 def get_perception_data(eeg_data, events ):
     
@@ -182,4 +184,15 @@ def target_to_path(target_id, subject, mapping_dict):
 
     return os.path.join(METADATA_DIR, 'audio', 'full.v{}'.format(version),
                         mapping[target_id]['audio_file'].decode("utf-8") )
+def get_Data(subject):
+    """
+    a function to load features and labels for a single subject
+    """
+    raw = get_raw(subject)
+    events = get_events(raw)
+
+    reconstructed = process(subject)
+    eeg_data = data_from_raw(raw)
+    return get_perception_data(eeg_data, events)
+
 

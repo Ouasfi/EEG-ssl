@@ -91,7 +91,7 @@ class RP_Dataset(Abstract_Dataset):
         return index[-1]
     def get_pos(self, t_anchor):
 
-      start = min(0,t_anchor-self.pos ) 
+      start = max(0,t_anchor-self.pos ) 
       end = min(self.__len__()-self.temp_len,t_anchor+self.pos ) # to get a sequence of lenght self.temp_lenght
       t_ = choice(arange(start,end, 1)) 
       return t_

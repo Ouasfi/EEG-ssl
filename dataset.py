@@ -1,6 +1,6 @@
 from pylab import *
 import torch 
-from settings import DEVICE
+from settings import DEVICE, STIMULUS_IDS
 class WeightedSampler(torch.utils.data.sampler.Sampler):
     r"""Sample des windows randomly
     Arguments:
@@ -157,8 +157,7 @@ class  Decoder_Dataset(torch.utils.data.Dataset):
         self.temp_len = T
         self.step = step
     def __getitem__(self, index):
-        classe = index[0]
-        print(index)
+        classe = STIMULUS_IDS[index[0]]
         sample = self.data_dict[classe][index[1]].get_data()
-        return torch.tensor(sample).to(DEVICE).unfold(-1,T, self.step ).permute(2,0,1,3), classe
+        return torch.tensor(sample).to(DEVICE).unfold(-1, self.temp_len, self.step ).permute(2,0,1,3), index[0]
     def __len__(self): len(self.data_dict)*len(self.data_dict[1])

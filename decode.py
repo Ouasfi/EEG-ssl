@@ -3,19 +3,20 @@ import os
 from settings  import *
 from preprocessing import *
 from models import Relative_Positioning, StagerNet, Decoder
-from dataset import Decoder_Dataset, Decoder_Dataset
+from dataset import Decoder_Dataset, DecoderSampler
 import process
-from torch import nn
-
+from train import load_losses, save_losses
+from torch import nn, optim
+import argparse 
 def _train_dec(model, train_loader, optimizer, epoch):
     
 	model.train()
 	train_losses = []
     
 	for x, y in train_loader:
-		
-		y = y.to(DEVICE).to(float).contiguous()
-		loss = model.loss_fn(model(x), y)
+		x = x.squeeze(dim= 0 )
+		y = y.to(DEVICE).squeeze(dim= 0 )
+		loss = model.loss_fn(model(x).unsqueeze(dim = 0), y)
 		optimizer.zero_grad()
 		loss.backward()
 		optimizer.step()
@@ -47,9 +48,11 @@ def _eval_loss_dec(model, data_loader):
     total_loss = 0
     with torch.no_grad():
         for x, y in data_loader:
-            loss = model.loss_fn(model(x), y)
-            total_loss += loss * x[0].shape[0] # 
-        avg_loss = total_loss / len(data_loader.dataset)
+            x = x.squeeze(dim= 0 )
+            y = y.to(DEVICE).squeeze(dim= 0 )
+            loss = model.loss_fn(model(x).unsqueeze(dim = 0), y)
+            total_loss += loss * x[0].shape[0] #
+        avg_loss = total_loss / data_loader.sampler.size# / len(data_loader.dataset)
     return avg_loss.item()
 
 def train_decoder(model, train_dataset, test_dataset,sampler, n_epochs=20, lr=1e-3, batch_size=256, load_last_saved_model=False, num_workers=8):
@@ -66,7 +69,7 @@ def train_decoder(model, train_dataset, test_dataset,sampler, n_epochs=20, lr=1e
    
 
 	train_loader = torch.utils.data.DataLoader(train_dataset, num_workers=0,sampler = sampler)
-	test_loader = torch.utils.data.DataLoader(test, num_workers=0,sampler = sampler)
+	test_loader = torch.utils.data.DataLoader(test_dataset, num_workers=0,sampler = sampler)
 	new_train_losses, new_test_losses = _train_epochs_dec(model, train_loader, test_loader, 
 																				 dict(epochs=n_epochs, lr=lr))
 
@@ -121,18 +124,11 @@ if __name__ == '__main__':
     ssl_model = Relative_Positioning(StagerNet,C , T, embedding_dim = M )
     ssl_model.load_state_dict(torch.load(os.path.join(ROOT, 'saved_models', 'ssl_model.pt')))
     model = ssl_model.feature_extractor
-
+    data_dict = process.get_features('01', condition = 1)
     aggregator = torch.mean
     decoder = Decoder(model, aggregator, C, T, embedding_dim=M, hidden_dim = 20)
     decoder.to(float).to(DEVICE)
     dataset = Decoder_Dataset(data_dict, T, step = 512)
     sampler = DecoderSampler(dataset, batch_size = 12, weights = [1/12]*12, size = 65)
     loader = torch.utils.data.DataLoader(dataset, num_workers=0,sampler = sampler)
-    loader = torch.utils.data.DataLoader(dataset, num_workers=0,sampler = sampler)
-    losses = []
-    for x, y in loader:
-        x = x.squeeze(dim= 0 )
-        y = y.to(DEVICE)
-        out = decoder(x)
-        loss = decoder.loss_fn(out.unsqueeze(dim = 0), y)
-        print(loss.item())
+    train_losses, test_losses, model = train_decoder(decoder, dataset,dataset,sampler, n_epochs=epochs, lr=lr)

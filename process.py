@@ -1,5 +1,5 @@
 from preprocessing import *
-from settings import METADATA_DIR, STIMULUS_IDS
+from settings import METADATA_DIR, STIMULUS_IDS, VIEW
 import numpy as np
 
 def decode_event(event_id):
@@ -41,7 +41,7 @@ def get_trial_epochs(raw, trial_events, stim_id, condition,
     events = get_stim_events(trial_events, [stim_id], [condition])
     
     #print(events)
-    start = -0.0000001
+    start = VIEW
     if condition in [1,2]: # cued
         if include_cue:
             stop = meta[stim_id]['length_with_cue']

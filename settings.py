@@ -21,3 +21,4 @@ DATA_PATH = METADATA_DIR
 SAVED_MODEL_DIR = "saved_models"
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 DEFAULT_VERSION = 2
+VIEW = -1e-6

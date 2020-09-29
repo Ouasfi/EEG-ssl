@@ -124,3 +124,24 @@ class Relative_Positioning(nn.Module):
 
     out = self.linear(h_combined)
     return out
+
+class Decoder(nn.Module):
+    
+    def __init__(self, EEG_FeatureExtractor, aggregator,  C, T, embedding_dim=100, hidden_dim= 20):
+        super().__init__()
+        self.feature_extractor = EEG_FeatureExtractor
+        #self.feature_extractor.float()
+        self.linear1 = nn.Linear(embedding_dim, hidden_dim)
+        self.linear2 = nn.Linear(hidden_dim, 12)
+        self.aggr = aggregator
+        self.loss_fn = nn.CrossEntropyLoss()
+        self.relu = torch.nn.ReLU()
+    def forward(self, x):
+        with torch.no_grad():
+            x = self.feature_extractor(x)
+
+        x = self.linear1(x)
+        x = self.relu(x)
+        x = self.linear2(x)
+        out = self.aggr(x, axis = 0)
+        return out   

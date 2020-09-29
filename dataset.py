@@ -1,6 +1,6 @@
 from pylab import *
 import torch 
-
+from settings import DEVICE
 class WeightedSampler(torch.utils.data.sampler.Sampler):
     r"""Sample des windows randomly
     Arguments:
@@ -113,3 +113,52 @@ def collate(batch):
     
     return (anchors, sampled), targets
 
+class DecoderSampler(torch.utils.data.sampler.Sampler):
+    r"""Sample des windows randomly
+    Arguments:
+    ---------
+        dataset (Dataset): dataset to sample from
+        size (int): The total number of sequences to sample
+    """
+
+    def __init__(self,dataset, batch_size,size,  weights):
+    
+        
+        self.batch_size = batch_size
+        self.size = size
+        self.dataset = dataset
+        self.weights = torch.DoubleTensor(weights)
+        
+    def __iter__(self):
+        num_batches = self.size// self.batch_size
+        while num_batches > 0:
+            #print()
+            sampled = 0
+            while sampled < self.batch_size:
+                indice  = torch.multinomial(
+            self.weights, 1, replacement=True)
+                #target = STIMULUS_IDS[indice] #CUDA 
+                t = choice(arange(0, 5, 1))
+                
+                sampled += 1
+                yield ( indice,t)
+            
+            num_batches -=1
+
+    def __len__(self):
+        return len(self.size)   
+class  Decoder_Dataset(torch.utils.data.Dataset):
+    '''
+    Classe dataset  pour les differents sampling
+    '''
+    def __init__(self, data_dict, T , step):
+
+        self.data_dict = data_dict
+        self.temp_len = T
+        self.step = step
+    def __getitem__(self, index):
+        classe = index[0]
+        print(index)
+        sample = self.data_dict[classe][index[1]].get_data()
+        return torch.tensor(sample).to(DEVICE).unfold(-1,T, self.step ).permute(2,0,1,3), classe
+    def __len__(self): len(self.data_dict)*len(self.data_dict[1])

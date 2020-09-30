@@ -195,4 +195,5 @@ def get_Data(subject):
     eeg_data = data_from_raw(raw)
     return get_perception_data(eeg_data, events)
 
+        
 

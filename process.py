@@ -85,3 +85,26 @@ def visualise_epochs(subject, signal, stim_id, condition = 1):
                      include_cue=True, picks=None, debug=False)
     epochs.plot(n_epochs = 10)
 
+if __name__ == '__main__':
+    condition = 1
+    for subject in SUBJECTS:
+        
+        subject = subject[1:]
+        raw = get_raw(subject)
+        ica = get_ica(subject)
+        reconstructed = ica.apply(raw)
+        picks = mne.pick_types(reconstructed.info, meg=False, eeg=True, eog=False, stim=False, exclude=[])
+        eeg_signal = reconstructed.get_data(picks)
+        path_processed= os.path.join(RAW_DIR, f"P{subject}-processed.npy")
+        np.save(eeg_signal, path_processed)
+        events = get_events(reconstructed)
+        for stim_id in STIMULUS_IDS:
+
+            epochs = get_trial_epochs(reconstructed, events, stim_id = stim_id, condition= condition,
+                     subject=subject, stimuli_version=None, meta=None,
+                     include_cue=True, picks=picks, debug=False)
+            epochs_name = os.path.join(RAW_DIR, f"P{subject}-epochs_{stim_id}_{condition}.fif")
+                     
+            epochs.save(epochs_name, overwrite=True)
+            print("saving file", epochs_name)
+        

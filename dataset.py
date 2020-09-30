@@ -1,6 +1,7 @@
 from pylab import *
 import torch 
-from settings import DEVICE, STIMULUS_IDS
+from settings import DEVICE, STIMULUS_IDS, RAW_DIR
+import numpy as np
 class WeightedSampler(torch.utils.data.sampler.Sampler):
     r"""Sample des windows randomly
     Arguments:
@@ -16,21 +17,24 @@ class WeightedSampler(torch.utils.data.sampler.Sampler):
         self.size = size
         self.dataset = dataset
         self.serie_len = len(self.dataset)
-        
+        self.n_subjects = len(self.dataset.subjects)
         self.weights = torch.DoubleTensor(weights)
         
     def __iter__(self):
         num_batches = self.size// self.batch_size
+        n_subject_samples = self.batch_size //self.n_subjects
         while num_batches > 0:
             #print()
-            sampled = 0
-            while sampled < self.batch_size:
-                target  = 2*torch.multinomial(
-            self.weights, 1, replacement=True) -1
-                t = choice(arange(0, self.serie_len-self.dataset.temp_len, 1))
-                t_ = self.dataset.get_pos(t) if target>0 else self.dataset.get_neg(t)
-                sampled += 1
-                yield (t, t_, target)
+            for subject in self.dataset.subjects:
+                sampled = 0
+                self.dataset.time_series = self.dataset.load_ts(subject)
+                while sampled < n_subject_samples:
+                    target  = 2*torch.multinomial(
+                self.weights, 1, replacement=True) -1
+                    t = choice(arange(0, self.serie_len-self.dataset.temp_len, 1))
+                    t_ = self.dataset.get_pos(t) if target>0 else self.dataset.get_neg(t)
+                    sampled += 1
+                    yield (t, t_, target)
             
             num_batches -=1
 
@@ -42,9 +46,9 @@ class Abstract_Dataset(torch.utils.data.Dataset):
     '''
     Classe dataset  pour les differents sampling
     '''
-    def __init__(self, time_series, temp_len , n_features):
-
-        self.time_series = time_series
+    def __init__(self, subjects, temp_len , n_features):
+        self.subjects = subjects
+        self.time_series = []
         self.temp_len = temp_len
         self.n_features = n_features
     def get_windows(self,index):
@@ -53,6 +57,11 @@ class Abstract_Dataset(torch.utils.data.Dataset):
         '''
         raise NotImplementedError
     def get_pos(self, t_anchor):
+        '''
+        a method to get positive samples
+        '''
+        raise NotImplementedError
+    def load_ts(self, index):
         '''
         a method to get positive samples
         '''
@@ -82,11 +91,15 @@ class RP_Dataset(Abstract_Dataset):
         '''
         a method to get sampled windows
         '''
+        
         (t, t_ , _) = index
         anchor_wind = self.time_series[:,t:t+self.temp_len]
         neg_wind = self.time_series[:,t_:t_+self.temp_len] # could be negative or positive
         return (anchor_wind, neg_wind)
-    
+    def load_ts(self, subject):
+        print(subject)
+        path_processed= os.path.join(RAW_DIR, f"P{subject}-processed.npy")
+        return np.load(path_processed)
     def get_targets(self, index):
         return index[-1]
     def get_pos(self, t_anchor):

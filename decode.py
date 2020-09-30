@@ -119,16 +119,22 @@ if __name__ == '__main__':
     n_train = args.n_train
     n_test = args.n_test
     #sampling params
-    
+
+    subjects = SUBJECTS[:-2]
+    #split data
+    test_subjects = [SUBJECTS[-2]]
 
     ssl_model = Relative_Positioning(StagerNet,C , T, embedding_dim = M )
     ssl_model.load_state_dict(torch.load(os.path.join(ROOT, 'saved_models', 'ssl_model.pt')))
     model = ssl_model.feature_extractor
-    data_dict = process.get_features('01', condition = 1)
+    #data_dict = process.get_features('01', condition = 1)
     aggregator = torch.mean
     decoder = Decoder(model, aggregator, C, T, embedding_dim=M, hidden_dim = 20)
     decoder.to(float).to(DEVICE)
-    dataset = Decoder_Dataset(data_dict, T, step = 512)
-    sampler = DecoderSampler(dataset, batch_size = 12, weights = [1/12]*12, size = 65)
+    train_dataset = Decoder_Dataset(subjects,[0,1,2], T, step = 512)
+    val_dataset = Decoder_Dataset(subjects,[3,4], T, step = 512)
+    train_sampler = DecoderSampler(train_dataset, batch_size = 12, weights = [1/12]*12, size = 65)
+    val_sampler = DecoderSampler(val_dataset, batch_size = 12, weights = [1/12]*12, size = 65)
+    samplers = {"train" : train_sampler, "val": test_sampler}
     loader = torch.utils.data.DataLoader(dataset, num_workers=0,sampler = sampler)
-    train_losses, test_losses, model = train_decoder(decoder, dataset,dataset,sampler, n_epochs=epochs, lr=lr)
+    train_losses, test_losses, model = train_decoder(decoder, dataset,val_dataset,sampler, n_epochs=epochs, lr=lr)

@@ -20,6 +20,8 @@ class WeightedSampler(torch.utils.data.sampler.Sampler):
         self.serie_len = 0
         self.n_subjects = len(self.dataset.subjects)
         self.weights = torch.DoubleTensor(weights)
+        with open(os.path.join(RAW_DIR, f"recordings_info_1.json") as json_file:
+		    self.lenghts = json.load(json_file)
         
     def __iter__(self):
         num_batches = self.size// self.batch_size
@@ -29,14 +31,13 @@ class WeightedSampler(torch.utils.data.sampler.Sampler):
             print(num_batches)
             for subject in self.dataset.subjects:
                 sampled = 0
-                self.serie_len = self.dataset.load_ts(subject).shape[1]
+                self.serie_len = self.lenghts[subject].shape[1]
                 while sampled < n_subject_samples:
                     target  = 2*torch.multinomial(
                 self.weights, 1, replacement=True) -1
                     t = choice(arange(0, self.serie_len-self.dataset.temp_len, 1))
-                    t_ = self.dataset.get_pos(t) if target>0 else self.dataset.get_neg(t)
                     sampled += 1
-                    yield (t, t_, target,subject)
+                    yield (t,target,subject)
             
             num_batches -=1
 
@@ -93,13 +94,16 @@ class RP_Dataset(Abstract_Dataset):
         '''
         a method to get sampled windows
         '''
-        (t, t_ , _,subject) = index
+        (t, target,subject) = index
+        #load ts
         del self.time_series
         self.time_series =self.load_ts(subject)
+        # slice 
         anchor_wind = self.time_series[:self.n_features,t:t+self.temp_len]
-        print(anchor_wind.shape,t,t+self.temp_len, self.time_series.shape[1]) 
-        neg_wind = self.time_series[:self.n_features,t_:t_+self.temp_len] # could be negative or positive
-        return (anchor_wind, neg_wind)
+        print(anchor_wind.shape,t,t+self.temp_len, self.time_series.shape[1], self.__len__()) 
+        t_ = self.get_pos(t) if target>0 else self.dataset.get_neg(t)
+        sampled_wind = self.time_series[:self.n_features,t_:t_+self.temp_len] # could be negative or positive
+        return (anchor_wind, sampled_wind)
     def load_ts(self, subject):
         #print(subject)
         path_processed= os.path.join(RAW_DIR, f"{subject}-processed.npy")

@@ -87,6 +87,7 @@ def visualise_epochs(subject, signal, stim_id, condition = 1):
 
 if __name__ == '__main__':
     condition = 1
+    shapes = {}
     for subject in SUBJECTS:
         
         subject = subject[1:]
@@ -96,6 +97,7 @@ if __name__ == '__main__':
         picks = mne.pick_types(reconstructed.info, meg=False, eeg=True, eog=False, stim=False, exclude=[])
         eeg_signal = reconstructed.get_data(picks)
         path_processed= os.path.join(RAW_DIR, f"P{subject}-processed.npy")
+        shapes[subject] = eeg_signal.shape
         np.save(path_processed,eeg_signal )
         events = get_events(reconstructed)
         for stim_id in STIMULUS_IDS:
@@ -107,4 +109,5 @@ if __name__ == '__main__':
                      
             epochs.save(epochs_name, overwrite=True)
             print("saving file", epochs_name)
-        
+
+    with open(os.path.join(RAW_DIR, f"recordings_info_{condition}.json", 'w') as json_file: json.dump(shapes, json_file)    

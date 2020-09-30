@@ -52,18 +52,16 @@ if __name__ == '__main__':
     print("======================")
     print(f"- subject: {subject}\n- C : {C}\n- T : {T}\n- M : {M}\n- epochs : {epochs}\n- batch size : {batch_size}\n- lr : {lr}\n- n_train : {n_train}\n- n_test : {n_test}\n- pos : {pos}\n- neg : {neg}")
     
-    X = process(subject)
+    subjects = SUBJECTS[:-2]
     #split data
-    split = int(X.shape[1]*0.6)
-    X_train = X[:, :split]
-    X_test = X[:, split:]
+    test_subject = SUBJECTS[-2]
     #define ssl model
     ssl_model = Relative_Positioning(StagerNet,C , T, embedding_dim = M )
     ssl_model.to(float)
     # datasets
-    train_dataset =  RP_Dataset(X_train, sampling_params = (pos, neg), temp_len = T ,
+    train_dataset =  RP_Dataset(subjects, sampling_params = (pos, neg), temp_len = T ,
                                 n_features = C )
-    test_dataset =  RP_Dataset(X_test, sampling_params = (pos, neg), temp_len = T ,
+    test_dataset =  RP_Dataset([test_subject], sampling_params = (pos, neg), temp_len = T ,
                                 n_features = C )
 
     train_sampler = WeightedSampler(train_dataset, batch_size = batch_size ,size = n_train,  

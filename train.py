@@ -74,8 +74,8 @@ def _train_epochs(model, train_loader, test_loader, train_args):
 
 
 def train_ssl(model, train_dataset, test_dataset,sampler, n_epochs=20, lr=1e-3, batch_size=256, load_last_saved_model=False, num_workers=8):
-	C = train_dataset.__getitem__((0, 0,1))[0][0].shape[0] # num channels
-	T = train_dataset.__getitem__((0, 0,1))[0][0].shape[1] # num timepoints
+#	C = train_dataset.__getitem__((0, 0,1))[0][0].shape[0] # num channels
+#	T = train_dataset.__getitem__((0, 0,1))[0][0].shape[1] # num timepoints
 	
 	if load_last_saved_model:
 		model.load_state_dict(torch.load(os.path.join(ROOT, SAVED_MODEL_DIR, 'ssl_model.pt')))

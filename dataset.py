@@ -4,6 +4,7 @@ from settings import DEVICE, STIMULUS_IDS, RAW_DIR
 import numpy as np
 import os
 import json
+import mne
 class WeightedSampler(torch.utils.data.sampler.Sampler):
     r"""Sample des windows randomly
     Arguments:
@@ -150,36 +151,83 @@ class DecoderSampler(torch.utils.data.sampler.Sampler):
         self.size = size
         self.dataset = dataset
         self.weights = torch.DoubleTensor(weights)
-        
+        self.n_subjects = len(self.dataset.subjects)
+
     def __iter__(self):
         num_batches = self.size// self.batch_size
+        n_subject_samples = self.batch_size //self.n_subjects
         while num_batches > 0:
             #print()
+            subject = choice( self.dataset.subjects)# TODO sample subjects ?
             sampled = 0
             while sampled < self.batch_size:
                 indice  = torch.multinomial(
             self.weights, 1, replacement=True)
                 #target = STIMULUS_IDS[indice] #CUDA 
-                t = choice(arange(0, 5, 1))
+                trial = choice(self.dataset.trials)
+                    #trial = choice(self.dataset.trials)
                 
                 sampled += 1
-                yield ( indice,t)
-            
+                yield ( indice,trial, subject)
+                
             num_batches -=1
 
     def __len__(self):
         return len(self.size)   
+
+class SequentialSampler(torch.utils.data.sampler.Sampler):
+    r"""Sample des windows randomly
+    Arguments:
+    ---------
+        dataset (Dataset): dataset to sample from
+        size (int): The total number of sequences to sample
+    """
+
+    def __init__(self,dataset, batch_size,size,  weights):
+    
+        
+        self.batch_size = batch_size
+        self.size = size
+        self.dataset = dataset
+        self.weights = torch.DoubleTensor(weights)
+        self.n_subjects = len(self.dataset.subjects)
+        
+    def __iter__(self):
+        num_batches = self.size// self.batch_size
+        n_subject_samples = self.batch_size //self.n_subjects
+        while num_batches > 0:
+            sampled = 0
+            for subject in self.dataset.subjects):# TODO sample subjects ?
+                for indice in range(len(self.weights)):
+                    for trial in self.trials:
+                        while sampled < self.batch_size:                   
+                            sampled += 1
+                            yield ( indice,trial, subject)
+                
+            num_batches -=1
+
+    def __len__(self):
+        return len(self.size)
 class  Decoder_Dataset(torch.utils.data.Dataset):
     '''
     Classe dataset  pour les differents sampling
     '''
-    def __init__(self, data_dict, T , step):
+    def __init__(self, subjects, trials, T , step, condition = 1):
 
-        self.data_dict = data_dict
+        self.subjects = subjects
         self.temp_len = T
         self.step = step
+        self.trials = trials
+        self.condition = condition
+    def load_epoch(self, index):
+        ( indice,trial, subject) = index
+        stim_id = STIMULUS_IDS[indice]
+        epochs_path = os.path.join(RAW_DIR, f"{subject}-epochs_{stim_id}_{self.condition}-epo.fif")
+        epochs = mne.read_epochs(epochs_path)[trial].get_data()
+        return epochs
     def __getitem__(self, index):
         classe = STIMULUS_IDS[index[0]]
-        sample = self.data_dict[classe][index[1]].get_data()
-        return torch.tensor(sample).to(DEVICE).unfold(-1, self.temp_len, self.step ).permute(2,0,1,3), index[0]
-    def __len__(self): len(self.data_dict)*len(self.data_dict[1])
+        sample = self.load_epoch(index)
+        x_sample = torch.tensor(sample).to(DEVICE).unfold(-1, self.temp_len, self.step ).permute(2,0,1,3)
+        return x_sample, index[0]
+    def __len__(self): len(self.subjects)*len(self.trials )*12

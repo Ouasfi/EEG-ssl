@@ -3,6 +3,7 @@ import torch
 from settings import DEVICE, STIMULUS_IDS, RAW_DIR
 import numpy as np
 import os
+import json
 class WeightedSampler(torch.utils.data.sampler.Sampler):
     r"""Sample des windows randomly
     Arguments:
@@ -20,18 +21,18 @@ class WeightedSampler(torch.utils.data.sampler.Sampler):
         self.serie_len = 0
         self.n_subjects = len(self.dataset.subjects)
         self.weights = torch.DoubleTensor(weights)
-        with open(os.path.join(RAW_DIR, f"recordings_info_1.json") as json_file:
-		    self.lenghts = json.load(json_file)
+        with open(os.path.join(RAW_DIR, f"recordings_info_1.json"),'r') as json_file:self.lenghts = json.load(json_file)
         
     def __iter__(self):
         num_batches = self.size// self.batch_size
         n_subject_samples = self.batch_size //self.n_subjects
         while num_batches > 0:
             #
-            print(num_batches)
+            if num_batches % 10 == 0 :
+                print("batches restants :",num_batches)
             for subject in self.dataset.subjects:
                 sampled = 0
-                self.serie_len = self.lenghts[subject].shape[1]
+                self.serie_len = self.lenghts[subject][1]
                 while sampled < n_subject_samples:
                     target  = 2*torch.multinomial(
                 self.weights, 1, replacement=True) -1
@@ -100,16 +101,16 @@ class RP_Dataset(Abstract_Dataset):
         self.time_series =self.load_ts(subject)
         # slice 
         anchor_wind = self.time_series[:self.n_features,t:t+self.temp_len]
-        print(anchor_wind.shape,t,t+self.temp_len, self.time_series.shape[1], self.__len__()) 
-        t_ = self.get_pos(t) if target>0 else self.dataset.get_neg(t)
+        #print(anchor_wind.shape,t,t+self.temp_len, self.time_series.shape[1], self.__len__()) 
+        t_ = self.get_pos(t) if target>0 else self.get_neg(t)
         sampled_wind = self.time_series[:self.n_features,t_:t_+self.temp_len] # could be negative or positive
         return (anchor_wind, sampled_wind)
     def load_ts(self, subject):
         #print(subject)
         path_processed= os.path.join(RAW_DIR, f"{subject}-processed.npy")
-        return np.load(path_processed)
+        return np.load(path_processed,mmap_mode = "c")
     def get_targets(self, index):
-        return index[-1]
+        return index[1]
     def get_pos(self, t_anchor):
 
       start = max(0,t_anchor-self.pos ) 

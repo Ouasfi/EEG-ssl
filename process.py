@@ -1,7 +1,7 @@
 from preprocessing import *
 from settings import METADATA_DIR, STIMULUS_IDS, VIEW
 import numpy as np
-
+import json
 def decode_event(event_id):
     stimulus_id = event_id // 10
     condition = event_id % 10

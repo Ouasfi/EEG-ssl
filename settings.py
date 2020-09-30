@@ -4,8 +4,8 @@ import torch
 
 DIR = os.path.split(os.getcwd())[0]
 ROOT = os.getcwd()
-SUBJECTS = ['P01','P02','P03','P04','P05','P06','P07','P08','P09','P10',
-            'P11','P12']
+SUBJECTS = ['P01','P04','P06','P07','P09',
+            'P11','P12', 'P13','P14']# TODO add 'P05' when ica is computed
 
 recording_with_mastoid_channels =['Pilot3','P01','P02','P03','P04','P05','P06','P07','P08']
 CONDITIONS = ['cued', 'non-cued', 'free']

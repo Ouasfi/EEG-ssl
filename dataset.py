@@ -5,6 +5,7 @@ import numpy as np
 import os
 import json
 import mne
+
 class WeightedSampler(torch.utils.data.sampler.Sampler):
     r"""Sample des windows randomly
     Arguments:
@@ -31,10 +32,13 @@ class WeightedSampler(torch.utils.data.sampler.Sampler):
             #
             if num_batches % 10 == 0 :
                 print("batches restants :",num_batches)
+            #iterate on each subject in the dataset
             for subject in self.dataset.subjects:
                 sampled = 0
                 self.serie_len = self.lenghts[subject][1]
+                #sample `n_subject_samples` per subject
                 while sampled < n_subject_samples:
+                    # each sample is a target and an anchor window. Positive or/and negative windows are sampled in the Dataset class. 
                     target  = 2*torch.multinomial(
                 self.weights, 1, replacement=True) -1
                     t = choice(arange(0, self.serie_len-self.dataset.temp_len, 1))
@@ -97,17 +101,18 @@ class RP_Dataset(Abstract_Dataset):
         a method to get sampled windows
         '''
         (t, target,subject) = index
+        print(subject)
         #load ts
-        del self.time_series
+        del self.time_series# to save memory
         self.time_series =self.load_ts(subject)
         # slice 
         anchor_wind = self.time_series[:self.n_features,t:t+self.temp_len]
-        #print(anchor_wind.shape,t,t+self.temp_len, self.time_series.shape[1], self.__len__()) 
+        # sample a positive or negative window
         t_ = self.get_pos(t) if target>0 else self.get_neg(t)
         sampled_wind = self.time_series[:self.n_features,t_:t_+self.temp_len] # could be negative or positive
         return (anchor_wind, sampled_wind)
+    
     def load_ts(self, subject):
-        #print(subject)
         path_processed= os.path.join(RAW_DIR, f"{subject}-processed.npy")
         return np.load(path_processed,mmap_mode = "c")
     def get_targets(self, index):
@@ -157,16 +162,15 @@ class DecoderSampler(torch.utils.data.sampler.Sampler):
         num_batches = self.size// self.batch_size
         n_subject_samples = self.batch_size //self.n_subjects
         while num_batches > 0:
-            #print()
+            
+            #sample a subject 
             subject = choice( self.dataset.subjects)# TODO sample subjects ?
             sampled = 0
-            while sampled < self.batch_size:
+            #for each subject sample `n_subject_samples`  couples (target class, trial)
+            while sampled < n_subject_samples:
                 indice  = torch.multinomial(
             self.weights, 1, replacement=True)
-                #target = STIMULUS_IDS[indice] #CUDA 
                 trial = choice(self.dataset.trials)
-                    #trial = choice(self.dataset.trials)
-                
                 sampled += 1
                 yield ( indice,trial, subject)
                 
@@ -176,7 +180,7 @@ class DecoderSampler(torch.utils.data.sampler.Sampler):
         return len(self.size)   
 
 class SequentialSampler(torch.utils.data.sampler.Sampler):
-    r"""Sample des windows randomly
+    r"""sampler for validation iterate sequentialy on subjects 
     Arguments:
     ---------
         dataset (Dataset): dataset to sample from
@@ -197,12 +201,12 @@ class SequentialSampler(torch.utils.data.sampler.Sampler):
         n_subject_samples = self.batch_size //self.n_subjects
         while num_batches > 0:
             sampled = 0
-            for subject in self.dataset.subjects):# TODO sample subjects ?
-                for indice in range(len(self.weights)):
-                    for trial in self.trials:
-                        while sampled < self.batch_size:                   
-                            sampled += 1
-                            yield ( indice,trial, subject)
+            while sampled < self.batch_size:   
+                for subject in self.dataset.subjects:# TODO sample subjects ?
+                    for indice in range(len(self.weights)):
+                        for trial in self.trials:                
+                                sampled += 1
+                                yield ( indice,trial, subject)
                 
             num_batches -=1
 

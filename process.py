@@ -2,6 +2,7 @@ from preprocessing import *
 from settings import METADATA_DIR, STIMULUS_IDS, VIEW
 import numpy as np
 import json
+
 def decode_event(event_id):
     stimulus_id = event_id // 10
     condition = event_id % 10
@@ -110,4 +111,5 @@ if __name__ == '__main__':
             epochs.save(epochs_name, overwrite=True)
             print("saving file", epochs_name)
 
-    with open(os.path.join(RAW_DIR, f"recordings_info_{condition}.json", 'w') as json_file: json.dump(shapes, json_file)    
+    with open(os.path.join(RAW_DIR, f"recordings_info_{condition}.json", 'w')) as json_file:
+        json.dump(shapes, json_file)    

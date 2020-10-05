@@ -55,7 +55,7 @@ def _eval_loss_dec(model, data_loader):
         avg_loss = total_loss / data_loader.sampler.size# / len(data_loader.dataset)
     return avg_loss.item()
 
-def train_decoder(model, train_dataset, test_dataset,sampler, n_epochs=20, lr=1e-3, batch_size=256, load_last_saved_model=False, num_workers=8):
+def train_decoder(model, train_dataset, test_dataset,samplers, n_epochs=20, lr=1e-3, batch_size=256, load_last_saved_model=False, num_workers=8):
 	
 	
 	if load_last_saved_model:
@@ -68,8 +68,8 @@ def train_decoder(model, train_dataset, test_dataset,sampler, n_epochs=20, lr=1e
     
    
 
-	train_loader = torch.utils.data.DataLoader(train_dataset, num_workers=0,sampler = sampler)
-	test_loader = torch.utils.data.DataLoader(test_dataset, num_workers=0,sampler = sampler)
+	train_loader = torch.utils.data.DataLoader(train_dataset, num_workers=0,sampler = samplers["train"])
+	test_loader = torch.utils.data.DataLoader(test_dataset, num_workers=0,sampler = samplers["val"])
 	new_train_losses, new_test_losses = _train_epochs_dec(model, train_loader, test_loader, 
 																				 dict(epochs=n_epochs, lr=lr))
 

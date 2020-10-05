@@ -48,7 +48,7 @@ def _eval_loss(model, data_loader):
             y = y.to(DEVICE).to(float).contiguous()
             loss = rp_loss(model, x, y)
             total_loss += loss * x[0].shape[0] # 
-        avg_loss = total_loss / len(data_loader.dataset)
+        avg_loss = total_loss / len(data_loader.sampler.size)
     return avg_loss.item()
 
 def _train_epochs(model, train_loader, test_loader, train_args):

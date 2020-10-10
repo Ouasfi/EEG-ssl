@@ -37,7 +37,8 @@ def _train(model, train_loader, optimizer, epoch):
 		loss.backward()
 		optimizer.step()
 		train_losses.append(loss.item())
-	return train_losses
+
+	return train_losses, mean(train_losses)
 
 def _eval_loss(model, data_loader):
     model.eval()
@@ -60,17 +61,15 @@ def _train_epochs(model, train_loader, test_loader, train_args):
 	train_losses = []
 	test_losses = [_eval_loss(model, test_loader)]
 	for epoch in range(1, epochs+1):
-		model.train()
-		train_losses.extend(_train(model, train_loader, optimizer, epoch))
-		test_loss = _eval_loss(model, test_loader)
-		test_losses.append(test_loss)
-		print(f'Epoch {epoch}, Test loss {test_loss:.4f}')
-		
-		# save model every 10 epochs
-		if epoch % 2 == 0:
-			torch.save(model.state_dict(), os.path.join(ROOT, 'saved_models', 'ssl_model_epoch{}.pt'.format(epoch)))
-	torch.save(model.state_dict(), os.path.join(ROOT, 'saved_models', 'ssl_model.pt'))
-	return train_losses, test_losses
+            model.train();losses, train_loss = _train(model, train_loader, optimizer, epoch)
+            train_losses.extend(losses)
+            test_loss = _eval_loss(model, test_loader)
+            test_losses.append(test_loss)
+            print(f'Epoch {epoch},Train_loss {train_loss :.4f}, Test loss {test_loss:.4f}')
+            if epoch % 2 == 0:
+                torch.save(model.state_dict(), os.path.join(ROOT, 'saved_models', 'ssl_model_epoch{}.pt'.format(epoch)))
+       # torch.save(model.state_dict(), os.path.join(ROOT, 'saved_models', 'ssl_model.pt'))
+        return train_losses, test_losses
 
 
 def train_ssl(model, train_dataset, test_dataset,sampler, n_epochs=20, lr=1e-3, batch_size=256, load_last_saved_model=False, num_workers=8):
@@ -105,4 +104,3 @@ def train_ssl(model, train_dataset, test_dataset,sampler, n_epochs=20, lr=1e-3, 
 	save_losses(train_losses, test_losses, SAVED_MODEL_DIR, 'ssl')
 
 	return train_losses, test_losses, model
-

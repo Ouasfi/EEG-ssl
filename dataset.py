@@ -162,17 +162,17 @@ class DecoderSampler(torch.utils.data.sampler.Sampler):
         num_batches = self.size// self.batch_size
         n_subject_samples = self.batch_size //self.n_subjects
         while num_batches > 0:
-            
             #sample a subject 
-            subject = choice( self.dataset.subjects)# TODO sample subjects ?
-            sampled = 0
-            #for each subject sample `n_subject_samples`  couples (target class, trial)
-            while sampled < n_subject_samples:
-                indice  = torch.multinomial(
-            self.weights, 1, replacement=True)
-                trial = choice(self.dataset.trials)
-                sampled += 1
-                yield ( indice,trial, subject)
+            batch_subjects = choice(self.dataset.subjects,replace = False, size =5)
+            for subject in  batch_subjects:# TODO sample subjects ?
+                sampled = 0
+                #for each subject sample `n_subject_samples`  couples (target class, trial)
+                while sampled < n_subject_samples:
+                    indice  = torch.multinomial(
+                self.weights, 1, replacement=True)
+                    trial = choice(self.dataset.trials)
+                    sampled += 1
+                    yield ( indice,trial, subject)
                 
             num_batches -=1
 
@@ -204,7 +204,7 @@ class SequentialSampler(torch.utils.data.sampler.Sampler):
             while sampled < self.batch_size:   
                 for subject in self.dataset.subjects:# TODO sample subjects ?
                     for indice in range(len(self.weights)):
-                        for trial in self.trials:                
+                        for trial in self.dataset.trials:                
                                 sampled += 1
                                 yield ( indice,trial, subject)
                 
@@ -224,14 +224,30 @@ class  Decoder_Dataset(torch.utils.data.Dataset):
         self.trials = trials
         self.condition = condition
     def load_epoch(self, index):
+        #print(index)
         ( indice,trial, subject) = index
         stim_id = STIMULUS_IDS[indice]
+        
         epochs_path = os.path.join(RAW_DIR, f"{subject}-epochs_{stim_id}_{self.condition}-epo.fif")
-        epochs = mne.read_epochs(epochs_path)[trial].get_data()
+        with nostdout():
+            if subject in recording_with_mastoid_channels:
+                epochs = mne.read_epochs(epochs_path, verbose = False)[trial].get_data()
+            else :
+                epochs = mne.read_epochs(epochs_path, verbose = False)[trial].drop_channels(['EXG5','EXG6']).get_data()
+        
         return epochs
     def __getitem__(self, index):
         classe = STIMULUS_IDS[index[0]]
-        sample = self.load_epoch(index)
-        x_sample = torch.tensor(sample).to(DEVICE).unfold(-1, self.temp_len, self.step ).permute(2,0,1,3)
+        sampled = self.load_epoch(index)
+        x_sample = torch.tensor(sampled).unfold(-1, self.temp_len, self.step ).permute(2,0,1,3) # .to(DEVICE)
         return x_sample, index[0]
     def __len__(self): len(self.subjects)*len(self.trials )*12
+        
+def collate(batch):
+   
+    samples= [item[0] for item in batch]
+    
+    targets = [item[1] for item in batch]
+    
+    return samples, targets
+

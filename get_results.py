@@ -21,7 +21,8 @@ def get_ssl_results(model, test_loader):
                     _, predicted = torch.max(softmax(out.data), 1)
                     y_true.extend(list(y.cpu().numpy()))
                     y_pred.extend(list(predicted.cpu().numpy()))
-    return y_true, y_pred
+    #return y_true, y_pred
+
 def get_ssl_scores(model, test_loader):
     y_true, y_pred = get_ssl_results(model, test_loader)
     acc_score = accuracy_score(y_true, y_pred)

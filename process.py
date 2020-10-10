@@ -1,7 +1,8 @@
 from preprocessing import *
-from settings import METADATA_DIR, STIMULUS_IDS, VIEW
+from settings import METADATA_DIR, STIMULUS_IDS, VIEW, MASTOID_REC
 import numpy as np
 import json
+import mne
 
 def decode_event(event_id):
     stimulus_id = event_id // 10
@@ -24,7 +25,6 @@ def get_stim_events(events, stimulus_ids='all', conditions='all'):
 
     return np.array(filtered)
 
-import mne
 def get_trial_epochs(raw, trial_events, stim_id, condition,
                      subject=None, stimuli_version=None, meta=None,
                      include_cue=False, picks=None, debug=False):
@@ -106,10 +106,15 @@ if __name__ == '__main__':
             epochs = get_trial_epochs(reconstructed, events, stim_id = stim_id, condition= condition,
                      subject=subject, stimuli_version=None, meta=None,
                      include_cue=True, picks=picks, debug=False)
-            epochs_name = os.path.join(RAW_DIR, f"P{subject}-epochs_{stim_id}_{condition}-epo.fif")
+            for trial, epoch in enumerate(epochs):
+                if subject in MASTOID_REC:
+                    np_epoch = epoch.get_data()
+                else :
+                    np_epoch = epoch.drop_channels(['EXG5','EXG6']).get_data()
+                epoch_name = os.path.join(RAW_DIR, f"P{subject}-epoch_{stim_id}_{trial}_{condition}.npy")
                      
-            epochs.save(epochs_name, overwrite=True)
-            print("saving file", epochs_name)
+                np.save(epoch_name, np_epoch)
+            print("saving file", epoch_name)
 
     with open(os.path.join(RAW_DIR, f"recordings_info_{condition}.json", 'w')) as json_file:
         json.dump(shapes, json_file)    

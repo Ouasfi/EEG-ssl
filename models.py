@@ -137,8 +137,8 @@ class Decoder(nn.Module):
         self.loss_fn = nn.CrossEntropyLoss()
         self.relu = torch.nn.ReLU()
     def forward(self, x):
-        with torch.no_grad():
-            x = self.feature_extractor(x)
+      
+        x = self.feature_extractor(x)
 
         x = self.linear1(x)
         x = self.relu(x)

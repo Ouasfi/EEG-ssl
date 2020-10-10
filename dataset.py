@@ -1,10 +1,23 @@
 from pylab import *
 import torch 
-from settings import DEVICE, STIMULUS_IDS, RAW_DIR
+from settings import DEVICE, STIMULUS_IDS, RAW_DIR, MASTOID_REC
 import numpy as np
 import os
 import json
 import mne
+import contextlib
+import io
+import sys
+
+class DummyFile(object):
+    def write(self, x): pass
+
+@contextlib.contextmanager
+def nostdout():
+    save_stdout = sys.stdout
+    sys.stdout = DummyFile()
+    yield
+    sys.stdout = save_stdout
 
 class WeightedSampler(torch.utils.data.sampler.Sampler):
     r"""Sample des windows randomly
@@ -48,7 +61,7 @@ class WeightedSampler(torch.utils.data.sampler.Sampler):
             num_batches -=1
 
     def __len__(self):
-        return len(self.train_list)   
+        return len(self.dataset)   
 
 
 class Abstract_Dataset(torch.utils.data.Dataset):
@@ -130,7 +143,7 @@ class RP_Dataset(Abstract_Dataset):
       t_ = choice(hstack([left_idx, right_idx]))
       return t_
 
-def collate(batch):
+def ssl_collate(batch):
 
     anchors = torch.stack([torch.from_numpy(item[0][0]) for item in batch])
     try:
@@ -230,7 +243,7 @@ class  Decoder_Dataset(torch.utils.data.Dataset):
         
         epochs_path = os.path.join(RAW_DIR, f"{subject}-epochs_{stim_id}_{self.condition}-epo.fif")
         with nostdout():
-            if subject in recording_with_mastoid_channels:
+            if subject in MASTOID_REC:
                 epochs = mne.read_epochs(epochs_path, verbose = False)[trial].get_data()
             else :
                 epochs = mne.read_epochs(epochs_path, verbose = False)[trial].drop_channels(['EXG5','EXG6']).get_data()

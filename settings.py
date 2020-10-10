@@ -7,7 +7,7 @@ ROOT = os.getcwd()
 SUBJECTS = ['P01','P04','P06','P07','P09',
             'P11','P12', 'P13','P14']# TODO add 'P05' when ica is computed
 
-recording_with_mastoid_channels =['Pilot3','P01','P02','P03','P04','P05','P06','P07','P08']
+MASTOID_REC =['Pilot3','P01','P02','P03','P04','P05','P06','P07','P08']
 CONDITIONS = ['cued', 'non-cued', 'free']
 KEYSTROKE_BASE_ID = 2000
 STIMULUS_IDS = [1, 2, 3, 4, 11, 12, 13, 14, 21, 22, 23, 24]

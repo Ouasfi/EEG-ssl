@@ -5,7 +5,7 @@ from settings import DEVICE, ROOT, SAVED_MODEL_DIR
 import numpy as np
 import os.path as op
 import os
-from dataset import collate
+from dataset import ssl_collate
 
 def load_losses(saved_models_dir, name):
 	with open(op.join(saved_models_dir, name + '_train_losses.npy'), 'rb') as f:
@@ -53,23 +53,27 @@ def _eval_loss(model, data_loader):
     return avg_loss.item()
 
 def _train_epochs(model, train_loader, test_loader, train_args):
+
 	epochs, lr = train_args['epochs'], train_args['lr']
 	optimizer = optim.Adam(model.parameters(), lr=lr)
+	scheduler = optim.lr_scheduler.StepLR(optimizer,step_size = 10, gamma = 0.1)
 	if not os.path.exists(SAVED_MODEL_DIR):
 		os.makedirs(SAVED_MODEL_DIR)
-	
 	train_losses = []
 	test_losses = [_eval_loss(model, test_loader)]
 	for epoch in range(1, epochs+1):
-            model.train();losses, train_loss = _train(model, train_loader, optimizer, epoch)
-            train_losses.extend(losses)
-            test_loss = _eval_loss(model, test_loader)
-            test_losses.append(test_loss)
-            print(f'Epoch {epoch},Train_loss {train_loss :.4f}, Test loss {test_loss:.4f}')
-            if epoch % 2 == 0:
-                torch.save(model.state_dict(), os.path.join(ROOT, 'saved_models', 'ssl_model_epoch{}.pt'.format(epoch)))
-       # torch.save(model.state_dict(), os.path.join(ROOT, 'saved_models', 'ssl_model.pt'))
-        return train_losses, test_losses
+		model.train()
+		losses, train_loss = _train(model, train_loader, optimizer, epoch)
+		train_losses.extend(losses)
+		test_loss = _eval_loss(model, test_loader)
+		test_losses.append(test_loss)
+		scheduler.step()
+		print(f'Epoch {epoch},Train_loss {train_loss :.4f}, Test loss {test_loss:.4f}')
+		if epoch % 2 == 0:
+			torch.save(model.state_dict(), os.path.join(ROOT, 'saved_models', 'ssl_model_epoch{}.pt'.format(epoch)))
+	torch.save(model.state_dict(), os.path.join(ROOT, 'saved_models', 'ssl_model.pt'))
+
+	return train_losses, test_losses
 
 
 def train_ssl(model, train_dataset, test_dataset,sampler, n_epochs=20, lr=1e-3, batch_size=256, load_last_saved_model=False, num_workers=8):
@@ -86,8 +90,9 @@ def train_ssl(model, train_dataset, test_dataset,sampler, n_epochs=20, lr=1e-3, 
     
    
 
-	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers,sampler = sampler["train"], collate_fn=collate)
-	test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers,sampler = sampler["val"], collate_fn=collate)
+	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, num_workers=num_workers,sampler = sampler["train"], collate_fn=ssl_collate)
+	test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers,sampler = sampler["val"], collate_fn=ssl_collate)
+
 
 	new_train_losses, new_test_losses = _train_epochs(model, train_loader, test_loader, 
 																				 dict(epochs=n_epochs, lr=lr))

@@ -38,7 +38,7 @@ def _train(model, train_loader, optimizer, epoch):
 		optimizer.step()
 		train_losses.append(loss.item())
 
-	return train_losses, mean(train_losses)
+	return train_losses, np.mean(train_losses)
 
 def _eval_loss(model, data_loader):
     model.eval()
@@ -49,14 +49,14 @@ def _eval_loss(model, data_loader):
             y = y.to(DEVICE).to(float).contiguous()
             loss = rp_loss(model, x, y)
             total_loss += loss * x[0].shape[0] # 
-        avg_loss = total_loss / len(data_loader.sampler.size)
+        avg_loss = total_loss / data_loader.sampler.size
     return avg_loss.item()
 
 def _train_epochs(model, train_loader, test_loader, train_args):
 
 	epochs, lr = train_args['epochs'], train_args['lr']
 	optimizer = optim.Adam(model.parameters(), lr=lr)
-	scheduler = optim.lr_scheduler.StepLR(optimizer,step_size = 10, gamma = 0.1)
+	scheduler = optim.lr_scheduler.StepLR(optimizer,step_size = 20, gamma = 0.01)
 	if not os.path.exists(SAVED_MODEL_DIR):
 		os.makedirs(SAVED_MODEL_DIR)
 	train_losses = []
@@ -64,7 +64,7 @@ def _train_epochs(model, train_loader, test_loader, train_args):
 	for epoch in range(1, epochs+1):
 		model.train()
 		losses, train_loss = _train(model, train_loader, optimizer, epoch)
-		train_losses.extend(losses)
+		train_losses.extend([train_loss])
 		test_loss = _eval_loss(model, test_loader)
 		test_losses.append(test_loss)
 		scheduler.step()

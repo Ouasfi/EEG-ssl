@@ -43,7 +43,7 @@ class WeightedSampler(torch.utils.data.sampler.Sampler):
         n_subject_samples = self.batch_size //self.n_subjects
         while num_batches > 0:
             #
-            if num_batches % 10 == 0 :
+            if num_batches % 100 == 0 :
                 print("batches restants :",num_batches)
             #iterate on each subject in the dataset
             for subject in self.dataset.subjects:
@@ -114,7 +114,7 @@ class RP_Dataset(Abstract_Dataset):
         a method to get sampled windows
         '''
         (t, target,subject) = index
-        print(subject)
+#        print(subject)
         #load ts
         del self.time_series# to save memory
         self.time_series =self.load_ts(subject)

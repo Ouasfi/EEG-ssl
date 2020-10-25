@@ -19,7 +19,7 @@ def _train_dec(model, train_loader, optimizer, epoch):
         #print('in')
         loss = torch.tensor([0.0], requires_grad=True)
         for x,y in zip(batch_x, batch_y):
-            x = x.squeeze(dim= 0 )
+            x = x.squeeze(dim= 0 ).to(DEVICE)
             y = y.to(DEVICE)
             out = model(x)
             #print(out.shape)
@@ -35,7 +35,7 @@ def _eval_loss_dec(model, data_loader):
     total_loss = 0
     with torch.no_grad():
         for x, y in data_loader:
-            x = x.squeeze(dim= 0 )
+            x = x.squeeze(dim= 0 ).to(DEVICE)
             y = y.to(DEVICE)
             loss = model.loss_fn(model(x).unsqueeze(dim = 0), y)
             total_loss += loss #* x[0].shape[0] #

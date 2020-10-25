@@ -7,6 +7,7 @@ import torch
 from torch import nn
 import numpy as np
 from torch.utils import data
+from pylab import *
 
 def get_ssl_results(model, test_loader):
 	y_true = []
@@ -61,9 +62,17 @@ def decoder_scores(model, subjects, trials):
     print(f'\tAccuracy: {100*acc_score:.2f}%')
     print(f'\tBalanced accuracy: {100*balanced_acc_score:.2f}%')
     return acc_score, balanced_acc_score
+def plot_losses(train_losses, test_losses, batch_size= 40):
+    epochs = len(test_losses)-1 # remove the first eval before training begins
+    epochs_losses = []
+    for i in range(epochs):
+        batch_losses = train_losses[i*batch_size:(i+1)*batch_size]
+        epochs_losses.append(np.mean(batch_losses))
+    plot( epochs_losses)
 
 if __name__ == '__main__':
     train_losses, test_losses = load_losses(SAVED_MODEL_DIR, 'ssl')
-    print(train_losses)
-    print(test_losses)
+    plot_losses(train_losses, test_losses)
+    #print(train_losses)
+    #print(test_losses)
 
